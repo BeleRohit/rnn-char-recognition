@@ -136,6 +136,13 @@ Run a small training job:
 python main.py --data data/shakespeare.txt --epochs 5 --hidden-size 64 --sequence-length 30
 ```
 
+Useful training controls:
+
+- `--validation-split 0.1` holds out the last 10% of text for validation.
+- `--learning-rate-decay 0.95` multiplies the learning rate after each epoch.
+- `--stateless` resets hidden state for every window. By default, training is stateful across adjacent windows.
+- `--progress-every 1000` controls how often progress lines are printed.
+
 Generate text after training:
 
 ```bash

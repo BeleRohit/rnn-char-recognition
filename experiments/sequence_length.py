@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from experiments.logging import append_experiment_results
 from src.preprocessing import build_vocabulary, encode_text, load_text
 from src.training import evaluate_loss, train
 
@@ -20,6 +24,7 @@ def main() -> None:
     text = load_text(args.data)
     chars, char_to_idx, _ = build_vocabulary(text)
     encoded = encode_text(text, char_to_idx)
+    rows = []
 
     for sequence_length in [10, 30, 100]:
         start = time.perf_counter()
@@ -35,13 +40,32 @@ def main() -> None:
         )
         elapsed = time.perf_counter() - start
         eval_loss = evaluate_loss(parameters, encoded, sequence_length)
-        print(
-            f"sequence_length={sequence_length} "
-            f"train_loss={history.losses[-1]:.4f} "
-            f"eval_loss={eval_loss:.4f} "
-            f"last_grad_norm={history.gradient_norms[-1]:.4f} "
-            f"seconds={elapsed:.2f}"
-        )
+        row = {
+            "sequence_length": sequence_length,
+            "train_loss": f"{history.losses[-1]:.4f}",
+            "train_loss_per_char": f"{history.loss_per_chars[-1]:.4f}",
+            "eval_loss": f"{eval_loss:.4f}",
+            "eval_loss_per_char": f"{eval_loss / sequence_length:.4f}",
+            "last_grad_norm": f"{history.gradient_norms[-1]:.4f}",
+            "seconds": f"{elapsed:.2f}",
+        }
+        rows.append(row)
+        print(" ".join(f"{key}={value}" for key, value in row.items()))
+
+    append_experiment_results(
+        "Experiment A: Sequence Length",
+        metadata={
+            "data": args.data,
+            "characters": len(text),
+            "vocab_size": len(chars),
+            "epochs": args.epochs,
+            "hidden_size": args.hidden_size,
+            "optimizer": "adam",
+            "learning_rate": 0.01,
+        },
+        rows=rows,
+    )
+    print("results_appended path=experiments/RESULTS.md")
 
 
 if __name__ == "__main__":

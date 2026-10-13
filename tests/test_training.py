@@ -22,7 +22,7 @@ def test_train_step_reduces_loss_on_repeated_example():
         optimizer="adam",
         seed=0,
     )
-    initial_loss, _, adam_state = train_step(
+    initial_loss, _, hidden_state, adam_state = train_step(
         params,
         inputs,
         targets,
@@ -32,7 +32,7 @@ def test_train_step_reduces_loss_on_repeated_example():
     )
     final_loss = initial_loss
     for step in range(2, 80):
-        final_loss, _, adam_state = train_step(
+        final_loss, _, hidden_state, adam_state = train_step(
             params,
             inputs,
             targets,
@@ -40,6 +40,7 @@ def test_train_step_reduces_loss_on_repeated_example():
             optimizer="adam",
             adam_state=adam_state,
             adam_timestep=step,
+            initial_hidden_state=hidden_state,
         )
 
     assert final_loss < initial_loss * 0.2
@@ -62,9 +63,33 @@ def test_training_history_records_loss_and_gradient_norms():
     )
 
     assert len(history.losses) == len(history.gradient_norms)
+    assert len(history.losses) == len(history.loss_per_chars)
     assert len(history.losses) > 0
     assert np.all(np.isfinite(history.losses))
+    assert np.all(np.isfinite(history.loss_per_chars))
     assert np.all(np.isfinite(history.gradient_norms))
+
+
+def test_training_records_validation_loss_when_validation_data_is_provided():
+    text = "hello hello hello hello"
+    chars, char_to_idx, _ = build_vocabulary(text)
+    encoded = encode_text(text, char_to_idx)
+
+    _, history = train(
+        encoded[:14],
+        vocab_size=len(chars),
+        hidden_size=6,
+        sequence_length=4,
+        epochs=2,
+        learning_rate=0.01,
+        optimizer="adam",
+        seed=1,
+        validation_data=encoded[10:],
+    )
+
+    assert len(history.validation_losses) == 2
+    assert len(history.validation_loss_per_chars) == 2
+    assert np.all(np.isfinite(history.validation_losses))
 
 
 def test_checkpoint_restoration_round_trip(tmp_path):
