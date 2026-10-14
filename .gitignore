@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+
+# Local datasets and trained artifacts can be large.
+data/*.txt
+checkpoints/*.npz
+plots/*.png
+*.png
+
+# OS/editor files.
+.DS_Store
+.idea/
+.vscode/

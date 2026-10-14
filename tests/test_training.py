@@ -2,7 +2,7 @@ import numpy as np
 
 from src.preprocessing import build_vocabulary, encode_text
 from src.training import train, train_step
-from src.utils import load_parameters, save_parameters
+from src.utils import load_checkpoint, load_parameters, save_checkpoint, save_parameters
 
 
 def test_train_step_reduces_loss_on_repeated_example():
@@ -131,3 +131,22 @@ def test_save_and_load_parameters_round_trip(tmp_path):
 
     for name in params:
         np.testing.assert_allclose(loaded[name], params[name])
+
+
+def test_checkpoint_metadata_round_trip(tmp_path):
+    params = {
+        "Wax": np.array([[1.0, 2.0]]),
+        "Waa": np.array([[3.0]]),
+        "Wya": np.array([[4.0]]),
+        "ba": np.array([[5.0]]),
+        "by": np.array([[6.0]]),
+    }
+    metadata = {"chars": ["a", "b"], "hidden_size": 1, "sequence_length": 2}
+    path = tmp_path / "metadata.npz"
+
+    save_checkpoint(path, params, metadata)
+    loaded_params, loaded_metadata = load_checkpoint(path)
+
+    assert loaded_metadata == metadata
+    for name in params:
+        np.testing.assert_allclose(loaded_params[name], params[name])

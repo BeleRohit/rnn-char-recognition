@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -19,7 +21,23 @@ def save_parameters(path: str | Path, parameters: ParameterDict) -> None:
 def load_parameters(path: str | Path) -> ParameterDict:
     """Load model parameters saved by save_parameters."""
     with np.load(Path(path)) as data:
-        return {name: data[name] for name in data.files}
+        return {name: data[name] for name in data.files if not name.startswith("__")}
+
+
+def save_checkpoint(path: str | Path, parameters: ParameterDict, metadata: dict[str, object]) -> None:
+    """Save model parameters and JSON metadata to a compressed NumPy archive."""
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    metadata_json = json.dumps(metadata, sort_keys=True)
+    np.savez_compressed(output_path, __metadata_json__=np.array(metadata_json), **parameters)
+
+
+def load_checkpoint(path: str | Path) -> tuple[ParameterDict, dict[str, object]]:
+    """Load parameters and metadata from a checkpoint."""
+    with np.load(Path(path), allow_pickle=False) as data:
+        parameters = {name: data[name] for name in data.files if not name.startswith("__")}
+        metadata_json = str(data["__metadata_json__"]) if "__metadata_json__" in data.files else "{}"
+    return parameters, json.loads(metadata_json)
 
 
 def iter_sequence_windows(
@@ -47,12 +65,16 @@ def plot_training_curves(
     output_path: str | Path | None = None,
 ) -> None:
     """Plot loss and optional gradient norm curves."""
+    os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
+    import matplotlib
+
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     fig, axis = plt.subplots()
     axis.plot(losses, label="loss")
     axis.set_xlabel("step")
-    axis.set_ylabel("sequence loss")
+    axis.set_ylabel("loss")
 
     if gradient_norms is not None:
         twin = axis.twinx()
