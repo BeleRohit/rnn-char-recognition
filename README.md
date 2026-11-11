@@ -257,10 +257,4 @@ it struggles with long-range coherence because gradients repeatedly pass through
 not solve long-term memory. LSTMs, GRUs, and Transformers address these issues
 with stronger mechanisms.
 
-## LinkedIn Summary
 
-I built a character-level Shakespeare language model from scratch using NumPy:
-manual BPTT, gradient clipping, Adam, checkpoint metadata, validation tracking,
-temperature sampling, and experiment logging. The model moved from random
-character predictions at about `4.17` loss/char to about `2.13` validation
-loss/char with a 128-unit vanilla RNN.
